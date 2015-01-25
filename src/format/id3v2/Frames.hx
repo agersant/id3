@@ -18,103 +18,16 @@ class TextInformationFrame extends Frame
 	{
 		super();
 		values = new Array();
-		
 		var encoding : TextEncoding = TextEncoding.createByIndex(data.get(0));
-		
-		if (encoding == TextEncoding.ISO_8859_1 || encoding == TextEncoding.UTF_8)
+		var pos = 1;
+		while (true)
 		{
-			var stringStart = 1;
-			var stringEnd = 1;
-			while (stringStart <= data.length)
-			{
-				if (stringEnd == data.length || data.get(stringEnd) == 0)
-				{
-					var value = data.getString(stringStart, stringEnd - stringStart);
-					values.push(value);
-					stringStart = stringEnd + 1;
-					stringEnd = stringStart;
-				}
-				else
-				{
-					stringEnd++;
-				}
-			}
+			var nextValue = readText(encoding, data, pos);
+			if (nextValue == null)
+				break;
+			values.push(nextValue.text);
+			pos += nextValue.bytesRead;
 		}
-		
-		if (encoding == TextEncoding.UTF_16_WITH_BOM || encoding == TextEncoding.UTF_16_BE)
-		{
-			var unicodePoint : UInt;
-			var bigEndian = true;
-			var currentByteIndex = 1;
-			var string : String = null;
-			while (currentByteIndex < data.length)
-			{
-				if (string == null)
-				{
-					string = "";
-					if (encoding == TextEncoding.UTF_16_WITH_BOM)
-					{
-						bigEndian = data.get(currentByteIndex) == 0xFE && data.get(currentByteIndex + 1) == 0xFF;
-						currentByteIndex += 2;
-					}
-				}
-				var read = readUTF16Character(bigEndian, data, currentByteIndex);
-				var unicodePoint = read.codePoint;
-				currentByteIndex += read.bytesRead;
-				if (unicodePoint != 0)
-				{
-					var char = new CodePoint(unicodePoint).toString();
-					string += char;
-				}
-				if (unicodePoint == 0 || currentByteIndex >= data.length)
-				{
-					values.push(string);
-					string = null;
-				}
-			}
-		}
-	}
-	
-	static function readUTF16Character(bigEndian : Bool, data : Bytes, pos : Int) : { codePoint : Int, bytesRead : Int }
-	{
-		var codePoint : Int;
-		var currentPos = pos;
-		var firstPair = readUTF16BytesPair(bigEndian, data, currentPos);
-		currentPos += 2;
-		if (firstPair >= 0xD800 && firstPair <= 0xDBFF)
-		{
-			var secondPair = readUTF16BytesPair(bigEndian, data, currentPos);
-			currentPos += 2;
-			if (secondPair < 0xDC00 || secondPair > 0xDFFF)
-				throw ParseError.BAD_UTF16_ENCODING;
-			var topTenBits = firstPair - 0xD800;
-			var lowTenBits = secondPair - 0xDC00;
-			codePoint = 0x010000 + (topTenBits << 10) + lowTenBits;
-		}
-		else
-		{
-			codePoint = firstPair;
-		}
-		return { codePoint: codePoint, bytesRead: (currentPos - pos) };
-	}
-	
-	static function readUTF16BytesPair(bigEndian : Bool, data : Bytes, pos : Int) : Int
-	{
-		var firstByte = data.get(pos);
-		var secondByte = data.get(pos + 1);
-		var msByte : Int;
-		var lsByte : Int;
-		if (bigEndian)
-		{
-			msByte = firstByte;
-			lsByte = secondByte;
-		}
-		else
-		{
-			msByte = secondByte;
-			lsByte = firstByte;
-		}
-		return ((msByte << 8) + lsByte);
 	}
 }
 
