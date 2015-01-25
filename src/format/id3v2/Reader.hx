@@ -19,6 +19,10 @@ import format.id3v2.Data.TextEncodingRestrictions;
 import format.id3v2.Data.TextFieldsSizeRestrictions;
 import format.id3v2.Data.UnknownFrame;
 import format.id3v2.Data.VersionNumber;
+import format.id3v2.Frames.FrameTALB;
+import format.id3v2.Frames.FrameTIT2;
+import format.id3v2.Frames.FrameTPE1;
+import format.id3v2.Frames.FrameTRCK;
 import format.tools.BitsInput;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
@@ -253,6 +257,14 @@ class Reader
 		var frame : Frame;
 		switch (header.ID)
 		{
+			case "TALB":
+				frame = new FrameTALB(frameData);
+			case "TIT2":
+				frame = new FrameTIT2(frameData);
+			case "TPE1":
+				frame = new FrameTPE1(frameData);
+			case "TRCK":
+				frame = new FrameTRCK(frameData);
 			default:
 				frame = new UnknownFrame(frameData);
 		}
@@ -291,7 +303,7 @@ class Reader
 	
 	function parseFrameID() : String
 	{
-		var regex = new EReg("[A-Z0-9]", "");
+		var regex = ~/[A-Z0-9]/;
 		var id = "";
 		for (i in 0...4)
 		{
