@@ -122,6 +122,14 @@ class TagRestrictions
 	public var imageSize: ImageSizeRestrictions;
 }
 
+enum TextEncoding
+{
+	ISO_8859_1;
+	UTF_16_WITH_BOM;
+	UTF_16_WITHOUT_BOM;
+	UTF_8;
+}
+
 enum TagSizeRestrictions {
 	MAX_128_FRAMES_1_MB;
 	MAX_64_FRAMES_128_KB;
@@ -171,7 +179,6 @@ enum ParseError
 	MISSING_FRAME_DATA_LENGTH_INDICATOR;
 	INVALID_FOOTER_FILE_IDENTIFIER;
 	
-	UNSUPPORTED_TEXT_ENCODING;
 	INVALID_FRAME_DATA_TRCK;
 }
 

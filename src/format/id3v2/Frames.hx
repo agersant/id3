@@ -1,7 +1,9 @@
 package format.id3v2;
 import format.id3v2.Data.Frame;
 import format.id3v2.Data.ParseError;
+import format.id3v2.Data.TextEncoding;
 import haxe.io.Bytes;
+import unifill.CodePoint;
 
 /**
  * ...
@@ -14,24 +16,58 @@ class TextInformationFrame extends Frame
 	public function new (data : Bytes)
 	{
 		super();
-		
-		var encoding : Int = data.get(0);
-		if (encoding != 0 && encoding != 3)
-			throw ParseError.UNSUPPORTED_TEXT_ENCODING;
-		
 		values = new Array();
-		var stringStart = 1;
-		var stringEnd = 1;
-		while (stringStart < data.length)
+		
+		var encoding : TextEncoding = TextEncoding.createByIndex(data.get(0));
+		
+		if (encoding == TextEncoding.ISO_8859_1 || encoding == TextEncoding.UTF_8)
 		{
-			if (stringEnd == data.length || data.get(stringEnd) == 0)
+			var stringStart = 1;
+			var stringEnd = 1;
+			while (stringStart < data.length)
 			{
-				var value = data.getString(stringStart, stringEnd - stringStart);
-				values.push(value);
-				stringStart = stringEnd + 1;
-				stringEnd = stringStart;
+				if (stringEnd == data.length || data.get(stringEnd) == 0)
+				{
+					var value = data.getString(stringStart, stringEnd - stringStart);
+					values.push(value);
+					stringStart = stringEnd + 1;
+					stringEnd = stringStart;
+				}
+				stringEnd++;
 			}
-			stringEnd++;
+		}
+		
+		if (encoding == TextEncoding.UTF_16_WITH_BOM || encoding == TextEncoding.UTF_16_WITHOUT_BOM)
+		{
+			var bigEndian = true;
+			bigEndian = data.get(1) == 0xFE && data.get(2) == 0xFF;
+			var string = "";
+			var currentByteIndex = 3;
+			var unicodePoint : UInt;
+			// TODO support crappy UTF-16 encoding for characters outside of the BMP
+			while (currentByteIndex < data.length)
+			{
+				var firstByte = data.get(currentByteIndex); currentByteIndex++;
+				var secondByte = data.get(currentByteIndex); currentByteIndex++;
+				if (bigEndian)
+				{
+					unicodePoint = (firstByte << 8) + secondByte;
+				}
+				else
+				{
+					unicodePoint = (secondByte << 8) + firstByte;
+				}
+				if (unicodePoint != 0)
+				{
+					var char = new CodePoint(unicodePoint).toString();
+					string += char;
+				}
+				if (unicodePoint == 0 || currentByteIndex >= data.length)
+				{
+					values.push(string);
+					string = "";
+				}
+			}
 		}
 	}
 }

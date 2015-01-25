@@ -281,7 +281,7 @@ class Reader
 				tagRestrictions.imageSize = ImageSizeRestrictions.EXACTLY_64_BY_64;
 			default:
 				throw ParseError.INVALID_EXTENDED_HEADER_IMAGE_SIZE_RESTRICTIONS;
-		}	
+		}
 		
 		return tagRestrictions;
 	}
@@ -437,17 +437,27 @@ class Reader
 	
 	function readSynchsafeInteger(numBytes : Int) : Int
 	{
-		var result = 0;
-		var i = numBytes - 1;
-		while (i >= 0)
+		var badEncoding = false;
+		var bytes : Array<Int> = new Array();
+		for (i in 0...numBytes)
 		{
-			var byte = input.readByte();
-			if ((byte & 0x80) != 0)
+			bytes.unshift(input.readByte());
+			if ((bytes[i] & 0x80) != 0)
+				badEncoding = true;
+		}
+		
+		var result = 0;
+		for (i in 0...numBytes)
+		{
+			var byte = bytes[i];
+			if (badEncoding)
 			{
-				throw INVALID_SYNCHSAFE_INTEGER;
+				// For crappy software that doesn't respect the standard
+				result += byte << (8 * i);
 			}
-			result += byte << (7 * i);
-			i--;
+			else {
+				result += byte << (7 * i);
+			}
 		}
 		return result;
 	}
