@@ -1,4 +1,5 @@
 package format.id3v2;
+import format.id3v2.Constants.ID3v1;
 import format.id3v2.Data.Frame;
 import format.id3v2.Data.ParseError;
 import format.id3v2.Data.TextEncoding;
@@ -125,7 +126,17 @@ class FrameTCON extends TextInformationFrame {
 	public function new (data : Bytes)
 	{
 		super(data);
-		// TODO replace numbers by ID3v1 genre names
+		var regex = ~/^[0-9]+$/;
+		for (i in 0...values.length)
+		{
+			var genreText = values[i];
+			if (regex.match(genreText))
+			{
+				var genreNumber = Std.parseInt(regex.matched(0));
+				if (genreNumber < ID3v1.GENRES.length)
+					values[i] = ID3v1.GENRES[genreNumber];
+			}
+		}
 		genre = values;
 	}
 }
