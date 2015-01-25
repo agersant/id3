@@ -186,3 +186,18 @@ class FrameTRCK extends TextInformationFrame
 	}
 	
 }
+
+class FrameTYER extends TextInformationFrame {
+	var yearRecorded : Array<Int>;
+	static var yearRegex = ~/^[0-9]+$/;
+	public function new (data : Bytes)
+	{
+		super(data);
+		yearRecorded = new Array();
+		for (value in values)
+		{
+			if (yearRegex.match(value))
+				yearRecorded.push(Std.parseInt(value));
+		}
+	}
+}
