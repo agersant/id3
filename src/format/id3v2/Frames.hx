@@ -33,7 +33,6 @@ class TextInformationFrame extends Frame
 			}
 			stringEnd++;
 		}
-		trace(values);
 	}
 }
 

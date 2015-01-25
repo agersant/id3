@@ -295,7 +295,6 @@ class Reader
 			return null;		
 		var frameData = readFrameData(header);
 		var frame : Frame;
-		trace(header.ID);
 		switch (header.ID)
 		{
 			case "TALB":
@@ -325,7 +324,6 @@ class Reader
 		var frameHeader = new FrameHeader();
 		frameHeader.ID = ID;
 		frameHeader.frameSize = readSynchsafeInteger(4); bytesRead += 4;
-		trace(frameHeader.ID + "  " + frameHeader.frameSize);
 		frameHeader.flags = parseFrameHeaderFlags(); bytesRead += 2;
 		if (frameHeader.flags.formatFlags.groupingIdentity)
 		{
@@ -478,7 +476,6 @@ class Reader
 		
 		if (dataLength != null)
 		{
-			trace('$inputLength $dataLength != $measuredDataLength');
 			if (dataLength != measuredDataLength)
 				throw ParseError.UNSYNCHRONIZATION_ERROR;
 			return wipBytes;
