@@ -292,7 +292,7 @@ class Reader
 			return null;
 		var header = parseFrameHeader();
 		if (header == null)
-			return null;		
+			return null;
 		var frameData = readFrameData(header);
 		var frame : Frame;
 		switch (header.ID)
@@ -323,7 +323,16 @@ class Reader
 			return null;
 		var frameHeader = new FrameHeader();
 		frameHeader.ID = ID;
-		frameHeader.frameSize = readSynchsafeInteger(4); bytesRead += 4;
+		if (data.header.versionNumber.majorVersion == 3)
+		{
+			frameHeader.frameSize = input.readInt32();
+			bytesRead += 4;
+		}
+		else
+		{
+			frameHeader.frameSize = readSynchsafeInteger(4);
+			bytesRead += 4;
+		}		
 		frameHeader.flags = parseFrameHeaderFlags(); bytesRead += 2;
 		if (frameHeader.flags.formatFlags.groupingIdentity)
 		{
@@ -453,7 +462,10 @@ class Reader
 		{
 			bytes.unshift(input.readByte());
 			if ((bytes[i] & 0x80) != 0)
+			{
 				badEncoding = true;
+				break;
+			}
 		}
 		
 		var result = 0;
