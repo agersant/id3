@@ -27,21 +27,25 @@ class Reader
 	var input : Input;
 	var bits : BitsInput;
 	var data : ID3v2;
+	var bytesRead : Int;
 	
 	public function new (_input : Input) 
 	{
 		input = _input;
 		bits = new BitsInput(input);
 		input.bigEndian = true;
+		bytesRead = 0;
 		data = new ID3v2();
 		data.header = parseHeader();
 		if (data.header.flags.extendedHeader)
+		{
 			data.extendedHeader = parseExtendedHeader();
+			bytesRead += data.extendedHeader.size;
+		}
 		parseFrames();
+		parsePadding();
 		if (data.header.flags.footer)
 			data.footer = parseFooter();
-		else
-			parsePadding();
 		trace(data);
 	}
 	
@@ -57,15 +61,28 @@ class Reader
 	
 	function parseFrames() : Void
 	{
+		// TMP
+		var size = data.header.size;
 		if (data.header.flags.extendedHeader)
-			input.read(data.header.size - data.extendedHeader.size);
-		else
-			input.read(data.header.size);
+			size -= data.extendedHeader.size;
+		input.read(size);
+		bytesRead += size;
 	}
 	
 	function parsePadding() : Void
 	{
-		// TODO
+		var paddingBytes = data.header.size - bytesRead;
+		if (paddingBytes > 0)
+		{
+			if (data.header.flags.footer)
+				throw ParseError.UNEXPECTED_PADDING;
+			for (i in 0...paddingBytes)
+			{
+				if (input.readByte() != 0)
+					throw ParseError.INVALID_PADDING_BYTE;
+				bytesRead++;
+			}
+		}
 	}
 	
 	function parseFooter() : Footer
