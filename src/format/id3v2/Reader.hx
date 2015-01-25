@@ -21,6 +21,7 @@ import format.id3v2.Data.UnknownFrame;
 import format.id3v2.Data.VersionNumber;
 import format.id3v2.Frames.FrameTALB;
 import format.id3v2.Frames.FrameTCON;
+import format.id3v2.Frames.FrameTDRC;
 import format.id3v2.Frames.FrameTIT2;
 import format.id3v2.Frames.FrameTPE1;
 import format.id3v2.Frames.FrameTRCK;
@@ -301,6 +302,8 @@ class Reader
 				frame = new FrameTALB(frameData);
 			case "TCON":
 				frame = new FrameTCON(frameData);
+			case "TDRC":
+				frame = new FrameTDRC(frameData);
 			case "TIT2":
 				frame = new FrameTIT2(frameData);
 			case "TPE1":

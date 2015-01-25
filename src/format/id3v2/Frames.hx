@@ -11,6 +11,61 @@ import unifill.CodePoint;
  * @author agersant
  */
 
+class Timestamp
+{
+	public function new () {}
+	public var year : Null<Int>;
+	public var month : Null<Int>;
+	public var day : Null<Int>;
+	public var hours : Null<Int>;
+	public var minutes : Null<Int>;
+	public var seconds : Null<Int>;
+}
+
+class TimestampFrame extends Frame
+{
+	var timestamp : Timestamp;
+	static var yearRegex 	= ~/^([0-9]{4})/;
+	static var monthRegex 	= ~/^[0-9]{4}-([0-9]{2})/;
+	static var dayRegex 	= ~/^[0-9]{4}-[0-9]{2}-([0-9]{2})/;
+	static var hoursRegex 	= ~/^[0-9]{4}-[0-9]{2}-[0-9]{2}T([0-9]{2})/;
+	static var minutesRegex = ~/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:([0-9]{2})/;
+	static var secondsRegex = ~/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:([0-9]{2})/;
+	public function new (data : Bytes)
+	{
+		super();
+		timestamp = new Timestamp();
+		var encoding : TextEncoding = TextEncoding.createByIndex(data.get(0));
+		var read = readText(encoding, data, 1);
+		if (read == null)
+			return;
+		if (yearRegex.match(read.text))
+		{
+			timestamp.year = Std.parseInt(yearRegex.matched(1));
+			if (monthRegex.match(read.text))
+			{
+				timestamp.month = Std.parseInt(monthRegex.matched(1));
+				if (dayRegex.match(read.text))
+				{
+					timestamp.day = Std.parseInt(dayRegex.matched(1));
+					if (hoursRegex.match(read.text))
+					{
+						timestamp.hours = Std.parseInt(hoursRegex.matched(1));
+						if (minutesRegex.match(read.text))
+						{
+							timestamp.minutes = Std.parseInt(minutesRegex.matched(1));
+							if (secondsRegex.match(read.text))
+							{
+								timestamp.seconds = Std.parseInt(secondsRegex.matched(1));
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+ 
 class TextInformationFrame extends Frame
 {
 	var values : Array<String>;
@@ -57,6 +112,15 @@ class FrameTCON extends TextInformationFrame {
 			}
 		}
 		genre = values;
+	}
+}
+
+class FrameTDRC extends TimestampFrame {
+	var dateRecorded : Timestamp;
+	public function new (data : Bytes)
+	{
+		super(data);
+		dateRecorded = timestamp;
 	}
 }
 
