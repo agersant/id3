@@ -37,27 +37,23 @@ class TextInformationFrame extends Frame
 			}
 		}
 		
-		if (encoding == TextEncoding.UTF_16_WITH_BOM || encoding == TextEncoding.UTF_16_WITHOUT_BOM)
+		if (encoding == TextEncoding.UTF_16_WITH_BOM || encoding == TextEncoding.UTF_16_BE)
 		{
 			var bigEndian = true;
-			bigEndian = data.get(1) == 0xFE && data.get(2) == 0xFF;
+			var currentByteIndex = 1;
+			if (encoding == TextEncoding.UTF_16_WITH_BOM)
+			{
+				bigEndian = data.get(currentByteIndex) == 0xFE && data.get(currentByteIndex + 1) == 0xFF;
+				currentByteIndex += 2;
+			}
 			var string = "";
-			var currentByteIndex = 3;
+			
 			var unicodePoint : UInt;
-			// TODO dont read BOM when encoding says no BOM (also, pick the correct endian-ness when that happens)
-			// TODO support crappy UTF-16 encoding for characters outside of the BMP
 			while (currentByteIndex < data.length)
 			{
-				var firstByte = data.get(currentByteIndex); currentByteIndex++;
-				var secondByte = data.get(currentByteIndex); currentByteIndex++;
-				if (bigEndian)
-				{
-					unicodePoint = (firstByte << 8) + secondByte;
-				}
-				else
-				{
-					unicodePoint = (secondByte << 8) + firstByte;
-				}
+				var read = readUTF16Character(bigEndian, data, currentByteIndex);
+				var unicodePoint = read.codePoint;
+				currentByteIndex += read.bytesRead;
 				if (unicodePoint != 0)
 				{
 					var char = new CodePoint(unicodePoint).toString();
@@ -70,6 +66,48 @@ class TextInformationFrame extends Frame
 				}
 			}
 		}
+	}
+	
+	static function readUTF16Character(bigEndian : Bool, data : Bytes, pos : Int) : { codePoint : Int, bytesRead : Int }
+	{
+		var codePoint : Int;
+		var currentPos = pos;
+		var firstPair = readUTF16BytesPair(bigEndian, data, currentPos);
+		currentPos += 2;
+		if (firstPair >= 0xD800 && firstPair <= 0xDBFF)
+		{
+			var secondPair = readUTF16BytesPair(bigEndian, data, currentPos);
+			currentPos += 2;
+			if (secondPair < 0xDC00 || secondPair > 0xDFFF)
+				throw ParseError.BAD_UTF16_ENCODING;
+			var topTenBits = firstPair - 0xD800;
+			var lowTenBits = secondPair - 0xDC00;
+			codePoint = 0x010000 + (topTenBits << 10) + lowTenBits;
+		}
+		else
+		{
+			codePoint = firstPair;
+		}
+		return { codePoint: codePoint, bytesRead: (currentPos - pos) };
+	}
+	
+	static function readUTF16BytesPair(bigEndian : Bool, data : Bytes, pos : Int) : Int
+	{
+		var firstByte = data.get(pos);
+		var secondByte = data.get(pos + 1);
+		var msByte : Int;
+		var lsByte : Int;
+		if (bigEndian)
+		{
+			msByte = firstByte;
+			lsByte = secondByte;
+		}
+		else
+		{
+			msByte = secondByte;
+			lsByte = firstByte;
+		}
+		return ((msByte << 8) + lsByte);
 	}
 }
 
@@ -87,6 +125,7 @@ class FrameTCON extends TextInformationFrame {
 	public function new (data : Bytes)
 	{
 		super(data);
+		// TODO replace numbers by ID3v1 genre names
 		genre = values;
 	}
 }
