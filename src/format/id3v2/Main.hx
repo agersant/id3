@@ -2,7 +2,6 @@ package format.id3v2;
 
 import format.id3v2.Reader;
 import haxe.macro.Format;
-import neko.Lib;
 import sys.io.File;
 
 /**

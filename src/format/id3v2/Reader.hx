@@ -2,6 +2,11 @@ package format.id3v2;
 import format.id3v2.Data.ExtendedHeader;
 import format.id3v2.Data.ExtendedHeaderFlags;
 import format.id3v2.Data.Footer;
+import format.id3v2.Data.Frame;
+import format.id3v2.Data.FrameFormatFlags;
+import format.id3v2.Data.FrameHeader;
+import format.id3v2.Data.FrameHeaderFlags;
+import format.id3v2.Data.FrameStatusFlags;
 import format.id3v2.Data.ID3v2;
 import format.id3v2.Data.Header;
 import format.id3v2.Data.HeaderFlags;
@@ -35,18 +40,13 @@ class Reader
 		bits = new BitsInput(input);
 		input.bigEndian = true;
 		bytesRead = 0;
+		
 		data = new ID3v2();
 		data.header = parseHeader();
-		if (data.header.flags.extendedHeader)
-		{
-			data.extendedHeader = parseExtendedHeader();
-			bytesRead += data.extendedHeader.size;
-		}
+		data.extendedHeader = parseExtendedHeader();
 		parseFrames();
-		parsePadding();
-		if (data.header.flags.footer)
-			data.footer = parseFooter();
-		trace(data);
+		data.footer = parseFooter();
+		
 	}
 	
 	function parseHeader() : Header
@@ -55,43 +55,31 @@ class Reader
 		parseHeaderFileIdentifier();
 		header.versionNumber = parseVersionNumber();
 		header.flags = parseHeaderFlags();
-		header.size = readSynchsafeInteger(4);
+		header.tagSize = readSynchsafeInteger(4);
 		return header;
 	}
 	
 	function parseFrames() : Void
 	{
-		// TMP
-		var size = data.header.size;
-		if (data.header.flags.extendedHeader)
-			size -= data.extendedHeader.size;
-		input.read(size);
-		bytesRead += size;
-	}
-	
-	function parsePadding() : Void
-	{
-		var paddingBytes = data.header.size - bytesRead;
-		if (paddingBytes > 0)
+		data.frames = new List();
+		while (true)
 		{
-			if (data.header.flags.footer)
-				throw ParseError.UNEXPECTED_PADDING;
-			for (i in 0...paddingBytes)
-			{
-				if (input.readByte() != 0)
-					throw ParseError.INVALID_PADDING_BYTE;
-				bytesRead++;
-			}
+			var frame = parseFrame();
+			if (frame == null)
+				return;
+			data.frames.add(frame);
 		}
 	}
 	
 	function parseFooter() : Footer
 	{
+		if (!data.header.flags.footer)
+			return null;
 		var footer = new Footer();
 		parseFooterFileIdentifier();
 		footer.versionNumber = parseVersionNumber();
 		footer.flags = parseHeaderFlags();
-		footer.size = readSynchsafeInteger(4);
+		footer.tagSize = readSynchsafeInteger(4);
 		return footer;
 	}
 	
@@ -138,6 +126,8 @@ class Reader
 	
 	function parseExtendedHeader() : ExtendedHeader
 	{
+		if (!data.header.flags.extendedHeader)
+			return null;
 		var extendedHeader = new ExtendedHeader();
 		extendedHeader.size = readSynchsafeInteger(4);
 		if (extendedHeader.size < 6)
@@ -152,6 +142,7 @@ class Reader
 			extendedHeader.CRCValue = parseExtendedHeaderFlagCRCData();
 		if (extendedHeader.flags.tagRestrictions)
 			extendedHeader.tagRestrictions = parseExtendedHeaderTagRestrictions();
+		bytesRead += extendedHeader.size;
 		return extendedHeader;
 	}
 	
@@ -249,6 +240,100 @@ class Reader
 		return tagRestrictions;
 	}
 	
+	function parseFrame() : Frame
+	{
+		if (bytesRead >= data.header.tagSize)
+			return null;
+		var header = parseFrameHeader();
+		if (header == null)
+			return null;
+		var frame = new Frame();
+		frame.header = header;
+		input.read(frame.header.frameSize); // TMP
+		return frame;
+	}
+	
+	function parseFrameHeader() : FrameHeader
+	{
+		var ID = parseFrameID();
+		if (ID == null)
+			return null;
+		var frameHeader = new FrameHeader();
+		frameHeader.ID = ID;
+		frameHeader.frameSize = readSynchsafeInteger(4); bytesRead += 4;
+		frameHeader.flags = parseFrameHeaderFlags(); bytesRead += 2;
+		if (frameHeader.flags.formatFlags.groupingIdentity)
+		{
+			frameHeader.groupingIdentity = input.readByte();
+			bytesRead++;
+		}
+		if (frameHeader.flags.formatFlags.compression && frameHeader.flags.formatFlags.dataLengthIndicator)
+			throw ParseError.MISSING_FRAME_DATA_LENGTH_INDICATOR;
+		if (frameHeader.flags.formatFlags.encryption)
+		{
+			frameHeader.encryptionMethod = input.readByte();
+			bytesRead++;
+		}
+		if (frameHeader.flags.formatFlags.dataLengthIndicator)
+		{
+			frameHeader.dataLength = readSynchsafeInteger(4);
+			bytesRead++;
+		}
+		return frameHeader;
+	}
+	
+	function parseFrameID() : String
+	{
+		var regex = new EReg("[A-Z0-9]", "");
+		var id = "";
+		for (i in 0...4)
+		{
+			var byte = input.readByte();
+			bytesRead++; 
+			if (i == 0 && byte == 0) // We hit the padding section of the tag
+				return null;
+			var char = String.fromCharCode(byte);
+			if (!regex.match(char))
+				throw ParseError.INVALID_FRAME_ID;
+			id += char;
+		}
+		return id;
+	}
+	
+	function parseFrameHeaderFlags() : FrameHeaderFlags
+	{
+		var flags = new FrameHeaderFlags();
+		flags.statusFlags = parseFrameStatusFlags();
+		flags.formatFlags = parseFrameFormatFlags();
+		return flags;
+	}
+	
+	function parseFrameStatusFlags() : FrameStatusFlags
+	{
+		var flags = new FrameStatusFlags();
+		bits.reset();
+		bits.readBit();
+		flags.preserveOnTagAlteration = bits.readBit();
+		flags.preserveOnFileAlteration = bits.readBit();
+		flags.readOnly = bits.readBit();
+		return flags;
+	}
+	
+	function parseFrameFormatFlags() : FrameFormatFlags
+	{
+		var flags = new FrameFormatFlags();
+		bits.reset();
+		bits.readBit();
+		flags.groupingIdentity = bits.readBit();
+		bits.readBit();
+		bits.readBit();
+		flags.compression = bits.readBit();
+		flags.encryption = bits.readBit();
+		flags.unsychronization = bits.readBit();
+		flags.dataLengthIndicator = bits.readBit();
+		return flags;
+	}
+	
 	function parseFooterFileIdentifier() : Void
 	{
 		var fileIdentifier = input.readByte();
@@ -270,7 +355,7 @@ class Reader
 	function readSynchsafeInteger(numBytes : Int) : Int
 	{
 		var result = 0;
-		var i = numBytes;
+		var i = numBytes - 1;
 		while (i >= 0)
 		{
 			result += input.readByte() << (7 * i);

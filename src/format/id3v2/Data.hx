@@ -10,6 +10,7 @@ class ID3v2
 	public var header : Header;
 	public var extendedHeader : ExtendedHeader;
 	public var footer : Footer;
+	public var frames : List<Frame>;
 }
 
 class VersionNumber
@@ -24,7 +25,13 @@ class Header
 	public function new () {};
 	public var versionNumber : VersionNumber;
 	public var flags : HeaderFlags;
-	public var size : Int;
+	public var tagSize : Int;
+}
+
+class Frame
+{
+	public function new () {};
+	public var header : FrameHeader;
 }
 
 typedef Footer = Header;
@@ -45,6 +52,43 @@ class ExtendedHeaderFlags
 	public var isUpdate : Bool;
 	public var crcDataPresent : Bool;
 	public var tagRestrictions : Bool;
+}
+
+class FrameHeader
+{
+	public function new () {};
+	public var ID : String;
+	public var frameSize : Int;
+	public var flags : FrameHeaderFlags;
+	public var groupingIdentity : Int;
+	public var encryptionMethod : Int;
+	public var dataLength : Int;
+}
+
+class FrameHeaderFlags
+{
+	public function new () { };
+	public var statusFlags : FrameStatusFlags;
+	public var formatFlags : FrameFormatFlags;
+	
+}
+
+class FrameStatusFlags
+{
+	public function new () { };
+	public var preserveOnTagAlteration : Bool;
+	public var preserveOnFileAlteration : Bool;
+	public var readOnly : Bool;
+}
+
+class FrameFormatFlags
+{
+	public function new () { };
+	public var groupingIdentity : Bool;
+	public var compression : Bool;
+	public var encryption : Bool;
+	public var unsychronization : Bool;
+	public var dataLengthIndicator : Bool;
 }
 
 class TagRestrictions
@@ -100,8 +144,8 @@ enum ParseError
 	INVALID_EXTENDED_HEADER_TAG_SIZE_RESTRICTIONS;
 	INVALID_EXTENDED_HEADER_TEXT_FIELD_SIZE_RESTRICTIONS;
 	INVALID_EXTENDED_HEADER_IMAGE_SIZE_RESTRICTIONS;
-	UNEXPECTED_PADDING;
-	INVALID_PADDING_BYTE;
+	INVALID_FRAME_ID;
+	MISSING_FRAME_DATA_LENGTH_INDICATOR;
 	INVALID_FOOTER_FILE_IDENTIFIER;
 }
 
