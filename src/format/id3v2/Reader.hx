@@ -26,33 +26,23 @@ class Reader
 
 	var input : Input;
 	var bits : BitsInput;
+	var data : ID3v2;
 	
 	public function new (_input : Input) 
 	{
 		input = _input;
 		bits = new BitsInput(input);
 		input.bigEndian = true;
-		var data = new ID3v2();
+		data = new ID3v2();
 		data.header = parseHeader();
 		if (data.header.flags.extendedHeader)
 			data.extendedHeader = parseExtendedHeader();
-			
-		// TODO parse frames instead of skipping
-		if (data.header.flags.extendedHeader)
-			input.read(data.header.size - data.extendedHeader.size);
-		else
-			input.read(data.header.size);
-		
+		parseFrames();
 		if (data.header.flags.footer)
 			data.footer = parseFooter();
 		else
 			parsePadding();
 		trace(data);
-	}
-	
-	function parsePadding() : Void
-	{
-		// TODO
 	}
 	
 	function parseHeader() : Header
@@ -63,6 +53,29 @@ class Reader
 		header.flags = parseHeaderFlags();
 		header.size = readSynchsafeInteger(4);
 		return header;
+	}
+	
+	function parseFrames() : Void
+	{
+		if (data.header.flags.extendedHeader)
+			input.read(data.header.size - data.extendedHeader.size);
+		else
+			input.read(data.header.size);
+	}
+	
+	function parsePadding() : Void
+	{
+		// TODO
+	}
+	
+	function parseFooter() : Footer
+	{
+		var footer = new Footer();
+		parseFooterFileIdentifier();
+		footer.versionNumber = parseVersionNumber();
+		footer.flags = parseHeaderFlags();
+		footer.size = readSynchsafeInteger(4);
+		return footer;
 	}
 	
 	function parseHeaderFileIdentifier() : Void
@@ -217,16 +230,6 @@ class Reader
 		}	
 		
 		return tagRestrictions;
-	}
-	
-	function parseFooter() : Footer
-	{
-		var footer = new Footer();
-		parseFooterFileIdentifier();
-		footer.versionNumber = parseVersionNumber();
-		footer.flags = parseHeaderFlags();
-		footer.size = readSynchsafeInteger(4);
-		return footer;
 	}
 	
 	function parseFooterFileIdentifier() : Void
