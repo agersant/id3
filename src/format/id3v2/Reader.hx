@@ -20,6 +20,7 @@ import format.id3v2.Data.TextFieldsSizeRestrictions;
 import format.id3v2.Data.UnknownFrame;
 import format.id3v2.Data.VersionNumber;
 import format.id3v2.Frames.FrameTALB;
+import format.id3v2.Frames.FrameTCON;
 import format.id3v2.Frames.FrameTIT2;
 import format.id3v2.Frames.FrameTPE1;
 import format.id3v2.Frames.FrameTRCK;
@@ -259,6 +260,8 @@ class Reader
 		{
 			case "TALB":
 				frame = new FrameTALB(frameData);
+			case "TCON":
+				frame = new FrameTCON(frameData);
 			case "TIT2":
 				frame = new FrameTIT2(frameData);
 			case "TPE1":
