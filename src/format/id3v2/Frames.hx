@@ -34,7 +34,10 @@ class TextInformationFrame extends Frame
 					stringStart = stringEnd + 1;
 					stringEnd = stringStart;
 				}
-				stringEnd++;
+				else
+				{
+					stringEnd++;
+				}
 			}
 		}
 		
