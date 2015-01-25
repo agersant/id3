@@ -8,52 +8,44 @@ import haxe.io.Bytes;
  * @author agersant
  */
 
-class TextBasedFrame extends Frame
+class TextInformationFrame extends Frame
 {
-	var text : String;
+	var values : Array<String>;
 	public function new (data : Bytes)
 	{
 		super();
+		
 		var encoding : Int = data.get(0);
-		if (encoding == 0 || encoding == 3)
-			// TODO support multi values!
-			text = data.getString(1, data.length - 2); // -2 for encoding byte and null termination
-		else
+		if (encoding != 0 && encoding != 3)
 			throw ParseError.UNSUPPORTED_TEXT_ENCODING;
+		
+		values = new Array();
+		var stringStart = 1;
+		var stringEnd = 1;
+		while (stringStart < data.length)
+		{
+			if (stringEnd == data.length || data.get(stringEnd) == 0)
+			{
+				var value = data.getString(stringStart, stringEnd - stringStart);
+				values.push(value);
+				stringStart = stringEnd + 1;
+				stringEnd = stringStart;
+			}
+			stringEnd++;
+		}
+		trace(values);
 	}
 }
 
-class FrameTALB extends TextBasedFrame
-{
-	var albumName : String;
-	public function new (data : Bytes)
-	{
-		super(data);
-		albumName = text;
-	}
-}
+class FrameTALB extends TextInformationFrame {}
 
-class FrameTIT2 extends TextBasedFrame
-{
-	var title : String;
-	public function new (data : Bytes)
-	{
-		super(data);
-		title = text;
-	}
-}
+class FrameTCON extends TextInformationFrame {}
 
-class FrameTPE1 extends TextBasedFrame
-{
-	var leadArtist : String;
-	public function new (data : Bytes)
-	{
-		super(data);
-		leadArtist = text;
-	}
-}
+class FrameTIT2 extends TextInformationFrame {}
+
+class FrameTPE1 extends TextInformationFrame {}
  
-class FrameTRCK extends TextBasedFrame
+class FrameTRCK extends TextInformationFrame
 {
 
 	var trackNumber : Int;
@@ -62,6 +54,7 @@ class FrameTRCK extends TextBasedFrame
 	public function new (data : Bytes)
 	{
 		super(data);
+		var text = values[0];
 		
 		var trackNumberRegex = ~/^[0-9]+/;
 		if (trackNumberRegex.match(text))
