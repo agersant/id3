@@ -17,8 +17,10 @@ import format.id3v2.Data.TagRestrictions;
 import format.id3v2.Data.TagSizeRestrictions;
 import format.id3v2.Data.TextEncodingRestrictions;
 import format.id3v2.Data.TextFieldsSizeRestrictions;
+import format.id3v2.Data.UnknownFrame;
 import format.id3v2.Data.VersionNumber;
 import format.tools.BitsInput;
+import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
 import haxe.io.Input;
 
@@ -246,10 +248,15 @@ class Reader
 			return null;
 		var header = parseFrameHeader();
 		if (header == null)
-			return null;
-		var frame = new Frame();
+			return null;		
+		var frameData = readFrameData(header);
+		var frame : Frame;
+		switch (header.ID)
+		{
+			default:
+				frame = new UnknownFrame(frameData);
+		}
 		frame.header = header;
-		input.read(frame.header.frameSize); // TMP
 		return frame;
 	}
 	
@@ -352,13 +359,52 @@ class Reader
 		throw ParseError.INVALID_FOOTER_FILE_IDENTIFIER;
 	}
 	
+	function readFrameData(frameHeader : FrameHeader) : Bytes
+	{
+		var wipBytes : Bytes;
+		if (frameHeader.flags.formatFlags.dataLengthIndicator)
+			wipBytes = Bytes.alloc(frameHeader.dataLength);
+		else
+			wipBytes = Bytes.alloc(frameHeader.frameSize);
+		
+		var unsynchronize = data.header.flags.unsynchronization || frameHeader.flags.formatFlags.unsychronization;
+		var dataLength = 0;
+		var prevByte : Int = 0;
+		for (i in 0...frameHeader.frameSize)
+		{
+			var byte = input.readByte();
+			if (!unsynchronize || byte != 0 || prevByte != 0xFF)
+			{
+				wipBytes.set(dataLength, byte);
+				dataLength++;
+			}
+			prevByte = byte;
+			bytesRead++;
+		}
+		
+		var outBytes : Bytes;
+		if (frameHeader.flags.formatFlags.dataLengthIndicator)
+			outBytes = wipBytes;
+		else
+		{
+			outBytes = Bytes.alloc(dataLength);
+			outBytes.blit(0, wipBytes, 0, dataLength);
+		}
+		return outBytes;
+	}
+	
 	function readSynchsafeInteger(numBytes : Int) : Int
 	{
 		var result = 0;
 		var i = numBytes - 1;
 		while (i >= 0)
 		{
-			result += input.readByte() << (7 * i);
+			var byte = input.readByte();
+			if ((byte & 0x80) != 0)
+			{
+				throw INVALID_SYNCHSAFE_INTEGER;
+			}
+			result += byte << (7 * i);
 			i--;
 		}
 		return result;

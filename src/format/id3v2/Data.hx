@@ -1,4 +1,5 @@
 package format.id3v2;
+import haxe.io.Bytes;
 
 /**
  * @author agersant
@@ -32,6 +33,15 @@ class Frame
 {
 	public function new () {};
 	public var header : FrameHeader;
+}
+
+class UnknownFrame extends Frame
+{
+	public function new(_data) {
+		super();
+		data = _data;
+	}
+	var data : Bytes;
 }
 
 typedef Footer = Header;
@@ -135,6 +145,7 @@ enum ImageSizeRestrictions {
 enum ParseError 
 {
 	INVALID_HEADER_FILE_IDENTIFIER;
+	INVALID_SYNCHSAFE_INTEGER;
 	UNSUPPORTED_VERSION;
 	INVALID_EXTENDED_HEADER_SIZE;
 	INVALID_EXTENDED_HEADER_NUMBER_OF_FLAG_BYTES;
