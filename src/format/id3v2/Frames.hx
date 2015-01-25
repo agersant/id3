@@ -43,18 +43,21 @@ class TextInformationFrame extends Frame
 		
 		if (encoding == TextEncoding.UTF_16_WITH_BOM || encoding == TextEncoding.UTF_16_BE)
 		{
+			var unicodePoint : UInt;
 			var bigEndian = true;
 			var currentByteIndex = 1;
-			if (encoding == TextEncoding.UTF_16_WITH_BOM)
-			{
-				bigEndian = data.get(currentByteIndex) == 0xFE && data.get(currentByteIndex + 1) == 0xFF;
-				currentByteIndex += 2;
-			}
-			var string = "";
-			
-			var unicodePoint : UInt;
+			var string : String = null;
 			while (currentByteIndex < data.length)
 			{
+				if (string == null)
+				{
+					string = "";
+					if (encoding == TextEncoding.UTF_16_WITH_BOM)
+					{
+						bigEndian = data.get(currentByteIndex) == 0xFE && data.get(currentByteIndex + 1) == 0xFF;
+						currentByteIndex += 2;
+					}
+				}
 				var read = readUTF16Character(bigEndian, data, currentByteIndex);
 				var unicodePoint = read.codePoint;
 				currentByteIndex += read.bytesRead;
@@ -66,7 +69,7 @@ class TextInformationFrame extends Frame
 				if (unicodePoint == 0 || currentByteIndex >= data.length)
 				{
 					values.push(string);
-					string = "";
+					string = null;
 				}
 			}
 		}
