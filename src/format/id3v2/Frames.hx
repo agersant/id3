@@ -37,13 +37,52 @@ class TextInformationFrame extends Frame
 	}
 }
 
-class FrameTALB extends TextInformationFrame {}
+class FrameTALB extends TextInformationFrame {
+	var album : Array<String>;
+	public function new (data : Bytes)
+	{
+		super(data);
+		album = values;
+	}
+}
 
-class FrameTCON extends TextInformationFrame {}
+class FrameTCON extends TextInformationFrame {
+	var genre : Array<String>;
+	public function new (data : Bytes)
+	{
+		super(data);
+		genre = values;
+	}
+}
 
-class FrameTIT2 extends TextInformationFrame {}
+class FrameTIT2 extends TextInformationFrame {
+	var title : Array<String>;
+	public function new (data : Bytes)
+	{
+		super(data);
+		title = values;
+	}
+}
 
-class FrameTPE1 extends TextInformationFrame {}
+class FrameTPE1 extends TextInformationFrame {
+	var artist : Array<String>;
+	public function new (data : Bytes)
+	{
+		super(data);
+		artist = values;
+	}
+}
+
+class FrameTXXX extends TextInformationFrame {
+	var description : String;
+	var value : String;
+	public function new (data : Bytes)
+	{
+		super(data);
+		description = values[0];
+		value = values[1];
+	}
+}
  
 class FrameTRCK extends TextInformationFrame
 {

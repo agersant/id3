@@ -24,6 +24,7 @@ import format.id3v2.Frames.FrameTCON;
 import format.id3v2.Frames.FrameTIT2;
 import format.id3v2.Frames.FrameTPE1;
 import format.id3v2.Frames.FrameTRCK;
+import format.id3v2.Frames.FrameTXXX;
 import format.tools.BitsInput;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
@@ -268,6 +269,8 @@ class Reader
 				frame = new FrameTPE1(frameData);
 			case "TRCK":
 				frame = new FrameTRCK(frameData);
+			case "TXXX":
+				frame = new FrameTXXX(frameData);
 			default:
 				frame = new UnknownFrame(frameData);
 		}
