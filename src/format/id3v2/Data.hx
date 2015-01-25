@@ -66,7 +66,18 @@ class ExtendedHeaderFlags
 
 class FrameHeader
 {
-	public function new () {};
+	public function new () { };
+	public function countExtraBytes() : Int
+	{
+		var extraBytes = 0;
+		if (this.flags.formatFlags.groupingIdentity)
+			extraBytes++;
+		if (this.flags.formatFlags.encryption)
+			extraBytes++;
+		if (this.flags.formatFlags.dataLengthIndicator)
+			extraBytes += 4;
+		return extraBytes;
+	}
 	public var ID : String;
 	public var frameSize : Int;
 	public var flags : FrameHeaderFlags;

@@ -423,16 +423,16 @@ class Reader
 	
 	function readFrameData(frameHeader : FrameHeader) : Bytes
 	{
+		var realFrameSize = frameHeader.frameSize - frameHeader.countExtraBytes();
 		var unsynchronization = data.header.flags.unsynchronization;
 		if (data.header.versionNumber.majorVersion > 3)
 			unsynchronization = unsynchronization || frameHeader.flags.formatFlags.unsychronization;
-		
 		if (unsynchronization)
-			return readUnsynchronizedData(frameHeader.frameSize, frameHeader.dataLength);
+			return readUnsynchronizedData(realFrameSize, frameHeader.dataLength);
 		else
 		{
-			var bytes = Bytes.alloc(frameHeader.frameSize);
-			input.readBytes(bytes, 0, frameHeader.frameSize);
+			var bytes = Bytes.alloc(realFrameSize);
+			input.readBytes(bytes, 0, realFrameSize);
 			return bytes;
 		}
 	}
