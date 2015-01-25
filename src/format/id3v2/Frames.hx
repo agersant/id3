@@ -44,6 +44,7 @@ class TextInformationFrame extends Frame
 			var string = "";
 			var currentByteIndex = 3;
 			var unicodePoint : UInt;
+			// TODO dont read BOM when encoding says no BOM (also, pick the correct endian-ness when that happens)
 			// TODO support crappy UTF-16 encoding for characters outside of the BMP
 			while (currentByteIndex < data.length)
 			{
