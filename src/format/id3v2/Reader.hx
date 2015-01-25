@@ -379,7 +379,8 @@ class Reader
 	{
 		var flags = new FrameStatusFlags();
 		bits.reset();
-		bits.readBit();
+		if (data.header.versionNumber.majorVersion > 3)
+			bits.readBit();
 		flags.preserveOnTagAlteration = bits.readBit();
 		flags.preserveOnFileAlteration = bits.readBit();
 		flags.readOnly = bits.readBit();
@@ -390,14 +391,23 @@ class Reader
 	{
 		var flags = new FrameFormatFlags();
 		bits.reset();
-		bits.readBit();
-		flags.groupingIdentity = bits.readBit();
-		bits.readBit();
-		bits.readBit();
-		flags.compression = bits.readBit();
-		flags.encryption = bits.readBit();
-		flags.unsychronization = bits.readBit();
-		flags.dataLengthIndicator = bits.readBit();
+		if (data.header.versionNumber.majorVersion == 3)
+		{
+			flags.compression = bits.readBit();
+			flags.encryption = bits.readBit();
+			flags.groupingIdentity = bits.readBit();
+		}
+		else
+		{
+			bits.readBit();
+			flags.groupingIdentity = bits.readBit();
+			bits.readBit();
+			bits.readBit();
+			flags.compression = bits.readBit();
+			flags.encryption = bits.readBit();
+			flags.unsychronization = bits.readBit();
+			flags.dataLengthIndicator = bits.readBit();
+		}
 		return flags;
 	}
 	
