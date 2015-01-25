@@ -25,7 +25,7 @@ class TextInformationFrame extends Frame
 		{
 			var stringStart = 1;
 			var stringEnd = 1;
-			while (stringStart < data.length)
+			while (stringStart <= data.length)
 			{
 				if (stringEnd == data.length || data.get(stringEnd) == 0)
 				{
@@ -179,7 +179,7 @@ class FrameTXXX extends TextInformationFrame {
 class FrameTRCK extends TextInformationFrame
 {
 
-	var trackNumber : Int;
+	var trackNumber : Null<Int>;
 	var tracksInSet : Null<Int>;
 	
 	public function new (data : Bytes)
@@ -194,7 +194,7 @@ class FrameTRCK extends TextInformationFrame
 		}
 		else
 		{
-			throw ParseError.INVALID_FRAME_DATA_TRCK;
+			trackNumber = null;
 		}
 		
 		var tracksInSetRegex = ~/\/([0-9]+)$/ ;
