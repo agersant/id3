@@ -3,6 +3,7 @@ import format.id3v2.Constants.ID3v1;
 import format.id3v2.Data.Frame;
 import format.id3v2.Data.ParseError;
 import format.id3v2.Data.TextEncoding;
+import format.id3v2.Data.TrackPosition;
 import haxe.io.Bytes;
 import unifill.CodePoint;
 
@@ -155,33 +156,22 @@ class FrameTXXX extends TextInformationFrame {
  
 class FrameTRCK extends TextInformationFrame
 {
-
-	var trackNumber : Null<Int>;
-	var tracksInSet : Null<Int>;
-	
+	static var trackNumberRegex = ~/^[0-9]+/;
+	var tracksInSetRegex = ~/^[0-9]+\/([0-9]+)$/;
+	var trackPosition : Array<TrackPosition>;
 	public function new (data : Bytes)
 	{
 		super(data);
-		var text = values[0];
-		
-		var trackNumberRegex = ~/^[0-9]+/;
-		if (trackNumberRegex.match(text))
+		trackPosition = new Array();
+		for (value in values)
 		{
-			trackNumber = Std.parseInt(trackNumberRegex.matched(0));
-		}
-		else
-		{
-			trackNumber = null;
-		}
-		
-		var tracksInSetRegex = ~/\/([0-9]+)$/ ;
-		if (tracksInSetRegex.match(text))
-		{
-			tracksInSet = Std.parseInt(tracksInSetRegex.matched(1));
-		}
-		else
-		{
-			tracksInSet = null;
+			var newPosition = new TrackPosition();
+			if (trackNumberRegex.match(value))
+				newPosition.trackNumber = Std.parseInt(trackNumberRegex.matched(0));
+			if (tracksInSetRegex.match(value))
+				newPosition.tracksInSet = Std.parseInt(tracksInSetRegex.matched(1));
+			if (newPosition.trackNumber != null || newPosition.tracksInSet != null)
+				trackPosition.push(newPosition);
 		}
 	}
 	

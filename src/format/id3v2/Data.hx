@@ -217,6 +217,13 @@ class TagRestrictions
 	public var imageSize: ImageSizeRestrictions;
 }
 
+class TrackPosition
+{
+	public function new () { };
+	public var trackNumber : Null<Int>;
+	public var tracksInSet : Null<Int>;
+}
+
 enum TextEncoding
 {
 	ISO_8859_1;
