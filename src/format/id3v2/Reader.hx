@@ -53,8 +53,8 @@ class Reader
 		data.header = parseHeader();
 		data.extendedHeader = parseExtendedHeader();
 		parseFrames();
-		data.footer = parseFooter();
-		
+		if (data.header.versionNumber.majorVersion > 3)
+			data.footer = parseFooter();
 	}
 	
 	function parseHeader() : Header
@@ -62,7 +62,7 @@ class Reader
 		var header = new Header();
 		parseHeaderFileIdentifier();
 		header.versionNumber = parseVersionNumber();
-		header.flags = parseHeaderFlags();
+		header.flags = parseHeaderFlags(header.versionNumber);
 		header.tagSize = readSynchsafeInteger(4);
 		return header;
 	}
@@ -86,7 +86,7 @@ class Reader
 		var footer = new Footer();
 		parseFooterFileIdentifier();
 		footer.versionNumber = parseVersionNumber();
-		footer.flags = parseHeaderFlags();
+		footer.flags = parseHeaderFlags(footer.versionNumber);
 		footer.tagSize = readSynchsafeInteger(4);
 		return footer;
 	}
@@ -113,7 +113,7 @@ class Reader
 	{
 		var versionNumber = new VersionNumber();
 		var majorVersion = input.readByte();
-		if (majorVersion != 4)
+		if (majorVersion < 3 || majorVersion > 4)
 			throw ParseError.UNSUPPORTED_VERSION;
 		versionNumber.majorVersion = majorVersion;
 		var revisionNumber = input.readByte();
@@ -121,14 +121,17 @@ class Reader
 		return versionNumber;
 	}
 	
-	function parseHeaderFlags() : HeaderFlags
+	function parseHeaderFlags(versionNumber : VersionNumber) : HeaderFlags
 	{
 		var flags = new HeaderFlags();
 		bits.reset();
 		flags.unsynchronization = bits.readBit();
 		flags.extendedHeader = bits.readBit();
 		flags.experimental = bits.readBit();
-		flags.footer = bits.readBit();
+		if (versionNumber.majorVersion > 3)
+			flags.footer = bits.readBit();
+		else
+			flags.footer = false;
 		return flags;
 	}
 	
@@ -136,20 +139,44 @@ class Reader
 	{
 		if (!data.header.flags.extendedHeader)
 			return null;
+			
 		var extendedHeader = new ExtendedHeader();
-		extendedHeader.size = readSynchsafeInteger(4);
-		if (extendedHeader.size < 6)
-			throw ParseError.INVALID_EXTENDED_HEADER_SIZE;
-		extendedHeader.numberOfFlagBytes = input.readByte();
-		if (extendedHeader.numberOfFlagBytes != 1)
-			throw ParseError.INVALID_EXTENDED_HEADER_NUMBER_OF_FLAG_BYTES;
+		if (data.header.versionNumber.majorVersion == 3)
+		{
+			extendedHeader.size = 4 + input.readInt32();
+			if (extendedHeader.size != 10 && extendedHeader.size != 14)
+				throw ParseError.INVALID_EXTENDED_HEADER_SIZE;
+		}
+		else
+		{
+			extendedHeader.size = readSynchsafeInteger(4);
+			if (extendedHeader.size < 6)
+				throw ParseError.INVALID_EXTENDED_HEADER_SIZE;
+		}
+		
+		if (data.header.versionNumber.majorVersion > 3)
+		{
+			extendedHeader.numberOfFlagBytes = input.readByte();
+			if (extendedHeader.numberOfFlagBytes != 1)
+				throw ParseError.INVALID_EXTENDED_HEADER_NUMBER_OF_FLAG_BYTES;
+		}
+		
 		extendedHeader.flags = parseExtendedHeaderFlags();
+		
+		if (data.header.versionNumber.majorVersion == 3)
+		{
+			var padding = readUnsynchronizedData(4, null);
+		}
+		
 		if (extendedHeader.flags.isUpdate)
 			parseExtendedHeaderFlagIsUpdate();
+		
 		if (extendedHeader.flags.crcDataPresent)
 			extendedHeader.CRCValue = parseExtendedHeaderFlagCRCData();
+		
 		if (extendedHeader.flags.tagRestrictions)
 			extendedHeader.tagRestrictions = parseExtendedHeaderTagRestrictions();
+		
 		bytesRead += extendedHeader.size;
 		return extendedHeader;
 	}
@@ -157,11 +184,22 @@ class Reader
 	function parseExtendedHeaderFlags() : ExtendedHeaderFlags
 	{
 		var flags = new ExtendedHeaderFlags();
-		bits.reset();
-		bits.readBit();
-		flags.isUpdate = bits.readBit();
-		flags.crcDataPresent = bits.readBit();
-		flags.tagRestrictions = bits.readBit();
+		if (data.header.versionNumber.majorVersion == 3)
+		{
+			flags.isUpdate = false;
+			flags.tagRestrictions = false;
+			bits.reset();
+			flags.crcDataPresent = bits.readBit();
+			input.readByte();
+		}
+		else
+		{
+			bits.reset();
+			bits.readBit();
+			flags.isUpdate = bits.readBit();
+			flags.crcDataPresent = bits.readBit();
+			flags.tagRestrictions = bits.readBit();
+		}
 		return flags;
 	}
 	
@@ -257,6 +295,7 @@ class Reader
 			return null;		
 		var frameData = readFrameData(header);
 		var frame : Frame;
+		trace(header.ID);
 		switch (header.ID)
 		{
 			case "TALB":
@@ -286,6 +325,7 @@ class Reader
 		var frameHeader = new FrameHeader();
 		frameHeader.ID = ID;
 		frameHeader.frameSize = readSynchsafeInteger(4); bytesRead += 4;
+		trace(frameHeader.ID + "  " + frameHeader.frameSize);
 		frameHeader.flags = parseFrameHeaderFlags(); bytesRead += 2;
 		if (frameHeader.flags.formatFlags.groupingIdentity)
 		{
@@ -303,6 +343,10 @@ class Reader
 		{
 			frameHeader.dataLength = readSynchsafeInteger(4);
 			bytesRead++;
+		}
+		else
+		{
+			frameHeader.dataLength = null;
 		}
 		return frameHeader;
 	}
@@ -379,36 +423,18 @@ class Reader
 	
 	function readFrameData(frameHeader : FrameHeader) : Bytes
 	{
-		var wipBytes : Bytes;
-		if (frameHeader.flags.formatFlags.dataLengthIndicator)
-			wipBytes = Bytes.alloc(frameHeader.dataLength);
-		else
-			wipBytes = Bytes.alloc(frameHeader.frameSize);
+		var unsynchronization = data.header.flags.unsynchronization;
+		if (data.header.versionNumber.majorVersion > 3)
+			unsynchronization = unsynchronization || frameHeader.flags.formatFlags.unsychronization;
 		
-		var unsynchronize = data.header.flags.unsynchronization || frameHeader.flags.formatFlags.unsychronization;
-		var dataLength = 0;
-		var prevByte : Int = 0;
-		for (i in 0...frameHeader.frameSize)
-		{
-			var byte = input.readByte();
-			if (!unsynchronize || byte != 0 || prevByte != 0xFF)
-			{
-				wipBytes.set(dataLength, byte);
-				dataLength++;
-			}
-			prevByte = byte;
-			bytesRead++;
-		}
-		
-		var outBytes : Bytes;
-		if (frameHeader.flags.formatFlags.dataLengthIndicator)
-			outBytes = wipBytes;
+		if (unsynchronization)
+			return readUnsynchronizedData(frameHeader.frameSize, frameHeader.dataLength);
 		else
 		{
-			outBytes = Bytes.alloc(dataLength);
-			outBytes.blit(0, wipBytes, 0, dataLength);
+			var bytes = Bytes.alloc(frameHeader.frameSize);
+			input.readBytes(bytes, 0, frameHeader.frameSize);
+			return bytes;
 		}
-		return outBytes;
 	}
 	
 	function readSynchsafeInteger(numBytes : Int) : Int
@@ -426,6 +452,45 @@ class Reader
 			i--;
 		}
 		return result;
+	}
+	
+	function readUnsynchronizedData(inputLength : Int, ?dataLength : Null<Int>) : Bytes
+	{
+		var wipBytes : Bytes;
+		if (dataLength != null)
+			wipBytes = Bytes.alloc(dataLength);
+		else
+			wipBytes = Bytes.alloc(inputLength);
+		
+		var measuredDataLength = 0;
+		var prevByte : Int = 0;
+		for (i in 0...inputLength)
+		{
+			var byte = input.readByte();
+			if (byte != 0 || prevByte != 0xFF)
+			{
+				wipBytes.set(measuredDataLength, byte);
+				measuredDataLength++;
+			}
+			prevByte = byte;
+			bytesRead++;
+		}
+		
+		if (dataLength != null)
+		{
+			trace('$inputLength $dataLength != $measuredDataLength');
+			if (dataLength != measuredDataLength)
+				throw ParseError.UNSYNCHRONIZATION_ERROR;
+			return wipBytes;
+		}
+		else
+		{
+			var outBytes : Bytes;
+			dataLength = measuredDataLength;
+			outBytes = Bytes.alloc(dataLength);
+			outBytes.blit(0, wipBytes, 0, dataLength);
+			return outBytes;
+		}
 	}
 	
 }

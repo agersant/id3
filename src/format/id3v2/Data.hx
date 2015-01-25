@@ -72,7 +72,7 @@ class FrameHeader
 	public var flags : FrameHeaderFlags;
 	public var groupingIdentity : Int;
 	public var encryptionMethod : Int;
-	public var dataLength : Int;
+	public var dataLength : Null<Int>;
 }
 
 class FrameHeaderFlags
@@ -146,6 +146,7 @@ enum ParseError
 {
 	INVALID_HEADER_FILE_IDENTIFIER;
 	INVALID_SYNCHSAFE_INTEGER;
+	UNSYNCHRONIZATION_ERROR;
 	UNSUPPORTED_VERSION;
 	INVALID_EXTENDED_HEADER_SIZE;
 	INVALID_EXTENDED_HEADER_NUMBER_OF_FLAG_BYTES;
