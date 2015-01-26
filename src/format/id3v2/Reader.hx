@@ -456,6 +456,7 @@ class Reader
 		{
 			var bytes = Bytes.alloc(realFrameSize);
 			input.readBytes(bytes, 0, realFrameSize);
+			bytesRead += realFrameSize;
 			return bytes;
 		}
 	}
