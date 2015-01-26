@@ -366,7 +366,6 @@ class Reader
 	
 	function parseFrameID() : String
 	{
-		var regex = ~/[A-Z0-9]/;
 		var id = "";
 		for (i in 0...4)
 		{
@@ -375,10 +374,11 @@ class Reader
 			if (i == 0 && byte == 0) // We hit the padding section of the tag
 				return null;
 			var char = String.fromCharCode(byte);
-			if (!regex.match(char))
-				throw ParseError.INVALID_FRAME_ID;
 			id += char;
 		}
+		var regex = ~/^[A-Z0-9]{4}$/;
+		if (!regex.match(id))
+			Sys.println('Invalid frame ID: $id');
 		return id;
 	}
 	
