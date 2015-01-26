@@ -501,13 +501,27 @@ class Reader
 		
 		var measuredDataLength = 0;
 		var prevByte : Int = 0;
+		var pendingZero = false;
 		for (i in 0...inputLength)
 		{
 			var byte = input.readByte();
-			if (byte != 0 || prevByte != 0xFF)
+			if (pendingZero)
+			{
+				if ((byte & 0xE0) != 0xE0)
+				{
+					wipBytes.set(measuredDataLength, 0);
+					measuredDataLength++;
+				}
+				pendingZero = false;
+			}
+			if (byte != 0 || prevByte != 0xFF || i == (inputLength - 1))
 			{
 				wipBytes.set(measuredDataLength, byte);
 				measuredDataLength++;
+			}
+			else
+			{
+				pendingZero = true;
 			}
 			prevByte = byte;
 			bytesRead++;
