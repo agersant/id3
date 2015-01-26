@@ -167,7 +167,7 @@ class Reader
 		
 		if (data.header.versionNumber.majorVersion == 3)
 		{
-			var padding = readUnsynchronizedData(4, null);
+			var padding = readUnsynchronizedData(4);
 		}
 		
 		if (extendedHeader.flags.isUpdate)
@@ -451,7 +451,7 @@ class Reader
 		if (data.header.versionNumber.majorVersion > 3)
 			unsynchronization = unsynchronization || frameHeader.flags.formatFlags.unsychronization;
 		if (unsynchronization)
-			return readUnsynchronizedData(realFrameSize, frameHeader.dataLength);
+			return readUnsynchronizedData(realFrameSize);
 		else
 		{
 			var bytes = Bytes.alloc(realFrameSize);
@@ -491,13 +491,10 @@ class Reader
 		return result;
 	}
 	
-	function readUnsynchronizedData(inputLength : Int, ?dataLength : Null<Int>) : Bytes
+	function readUnsynchronizedData(inputLength : Int) : Bytes
 	{
 		var wipBytes : Bytes;
-		if (dataLength != null)
-			wipBytes = Bytes.alloc(dataLength);
-		else
-			wipBytes = Bytes.alloc(inputLength);
+		wipBytes = Bytes.alloc(inputLength);
 		
 		var measuredDataLength = 0;
 		var prevByte : Int = 0;
@@ -527,20 +524,10 @@ class Reader
 			bytesRead++;
 		}
 		
-		if (dataLength != null)
-		{
-			if (dataLength != measuredDataLength)
-				throw ParseError.UNSYNCHRONIZATION_ERROR;
-			return wipBytes;
-		}
-		else
-		{
-			var outBytes : Bytes;
-			dataLength = measuredDataLength;
-			outBytes = Bytes.alloc(dataLength);
-			outBytes.blit(0, wipBytes, 0, dataLength);
-			return outBytes;
-		}
+		var outBytes : Bytes;
+		outBytes = Bytes.alloc(measuredDataLength);
+		outBytes.blit(0, wipBytes, 0, measuredDataLength);
+		return outBytes;
 	}
 	
 }
