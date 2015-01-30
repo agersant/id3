@@ -94,6 +94,10 @@ class FrameTALB extends TextInformationFrame {
 		super(data);
 		album = values;
 	}
+	public function getAlbumName() : String
+	{
+		return album[0];
+	}
 }
 
 class FrameTCON extends TextInformationFrame {
@@ -114,6 +118,10 @@ class FrameTCON extends TextInformationFrame {
 		}
 		genre = values;
 	}
+	public function getGenres() : Array<String>
+	{
+		return genre.copy();
+	}
 }
 
 class FrameTDRC extends TimestampFrame {
@@ -131,6 +139,9 @@ class FrameTIT2 extends TextInformationFrame {
 	{
 		super(data);
 		title = values;
+	}
+	public function getTrackTitle() : String {
+		return title[0];
 	}
 }
 
@@ -151,6 +162,14 @@ class FrameTXXX extends TextInformationFrame {
 		super(data);
 		description = values[0];
 		value = values[1];
+	}
+	public function getDescription() : String
+	{
+		return description;
+	}
+	public function getValue() : String
+	{
+		return value;
 	}
 }
  
@@ -174,7 +193,12 @@ class FrameTRCK extends TextInformationFrame
 				trackPosition.push(newPosition);
 		}
 	}
-	
+	public function getTrackNumber() : Null<Int>
+	{
+		if (trackPosition.length > 0)
+			return trackPosition[0].trackNumber;
+		return null;
+	}
 }
 
 class FrameTYER extends TextInformationFrame {

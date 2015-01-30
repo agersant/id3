@@ -1,4 +1,9 @@
 package format.id3v2;
+import format.id3v2.Frames.FrameTALB;
+import format.id3v2.Frames.FrameTCON;
+import format.id3v2.Frames.FrameTIT2;
+import format.id3v2.Frames.FrameTRCK;
+import format.id3v2.Frames.FrameTXXX;
 import haxe.io.Bytes;
 import unifill.CodePoint;
 
@@ -8,11 +13,19 @@ import unifill.CodePoint;
 
 class ID3v2
 {
-	public function new () {};
+	public function new () {
+		frames = new List();
+		framesTXXX = new List();
+	};
 	public var header : Header;
 	public var extendedHeader : ExtendedHeader;
 	public var footer : Footer;
 	public var frames : List<Frame>;
+	public var frameTALB : FrameTALB;
+	public var frameTCON : FrameTCON;
+	public var frameTIT2 : FrameTIT2;
+	public var frameTRCK : FrameTRCK;
+	public var framesTXXX : List<FrameTXXX>;
 }
 
 class VersionNumber

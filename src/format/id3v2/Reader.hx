@@ -59,6 +59,53 @@ class Reader
 			data.footer = parseFooter();
 	}
 	
+	
+	
+	// Data extraction
+	
+	public function getTrackTitle() : String
+	{
+		if (data.frameTIT2 != null)
+			return data.frameTIT2.getTrackTitle();
+		return null;
+	}
+	
+	public function getTrackNumber() : Null<Int>
+	{
+		if (data.frameTRCK != null)
+			return data.frameTRCK.getTrackNumber();
+		return null;
+	}
+	
+	public function getAlbumName() : String
+	{
+		if (data.frameTALB != null)
+			return data.frameTALB.getAlbumName();
+		return null;
+	}
+	
+	public function getGenres() : Array<String>
+	{
+		if (data.frameTCON != null)
+			return data.frameTCON.getGenres();
+		return new Array();
+	}
+	
+	public function getCustomTextInformation(description : String) : String
+	{
+		for (frame in data.framesTXXX)
+		{
+			if (frame.getDescription().toLowerCase() != description.toLowerCase())
+				continue;
+			return frame.getValue();
+		}
+		return null;
+	}
+	
+	
+	
+	// Parse all
+	
 	function parseHeader() : Header
 	{
 		var header = new Header();
@@ -71,7 +118,6 @@ class Reader
 	
 	function parseFrames() : Void
 	{
-		data.frames = new List();
 		while (true)
 		{
 			var frame = parseFrame();
@@ -92,6 +138,10 @@ class Reader
 		footer.tagSize = readSynchsafeInteger(4);
 		return footer;
 	}
+	
+	
+	
+	// Parse header
 	
 	function parseHeaderFileIdentifier() : Void
 	{
@@ -136,6 +186,11 @@ class Reader
 			flags.footer = false;
 		return flags;
 	}
+	
+	
+	
+	
+	// Parse extended header
 	
 	function parseExtendedHeader() : ExtendedHeader
 	{
@@ -288,6 +343,10 @@ class Reader
 		return tagRestrictions;
 	}
 	
+	
+	
+	// Parse frame
+	
 	function parseFrame() : Frame
 	{
 		if (bytesRead >= data.header.tagSize)
@@ -300,19 +359,25 @@ class Reader
 		switch (header.ID)
 		{
 			case "TALB":
-				frame = new FrameTALB(frameData);
+				data.frameTALB = new FrameTALB(frameData);
+				frame = data.frameTALB;
 			case "TCON":
-				frame = new FrameTCON(frameData);
+				data.frameTCON = new FrameTCON(frameData);
+				frame = data.frameTCON;
 			case "TDRC":
 				frame = new FrameTDRC(frameData);
 			case "TIT2":
-				frame = new FrameTIT2(frameData);
+				data.frameTIT2 = new FrameTIT2(frameData);
+				frame = data.frameTIT2;
 			case "TPE1":
 				frame = new FrameTPE1(frameData);
 			case "TRCK":
-				frame = new FrameTRCK(frameData);
+				data.frameTRCK = new FrameTRCK(frameData);
+				frame = data.frameTRCK;
 			case "TXXX":
-				frame = new FrameTXXX(frameData);
+				var frameTXXX = new FrameTXXX(frameData);
+				data.framesTXXX.push( frameTXXX );
+				frame = frameTXXX;
 			case "TYER":
 				frame = new FrameTYER(frameData);
 			default:
@@ -426,6 +491,10 @@ class Reader
 		return flags;
 	}
 	
+	
+	
+	// Parse footer
+	
 	function parseFooterFileIdentifier() : Void
 	{
 		var fileIdentifier = input.readByte();
@@ -443,6 +512,10 @@ class Reader
 		}
 		throw ParseError.INVALID_FOOTER_FILE_IDENTIFIER;
 	}
+	
+	
+	
+	// Parse utils
 	
 	function readFrameData(frameHeader : FrameHeader) : Bytes
 	{
