@@ -84,6 +84,17 @@ class Reader
 		return null;
 	}
 	
+	public function getYear() : Null<Int>
+	{
+		var year : Null<Int> = null;
+		if (data.framesTYER != null)
+			year = data.framesTYER.getYear();
+		if (year == null)
+			if (data.frameTDRC != null)
+				year = data.frameTDRC.getYear();
+		return year;
+	}
+	
 	public function getGenres() : Array<String>
 	{
 		if (data.frameTCON != null)
@@ -365,7 +376,8 @@ class Reader
 				data.frameTCON = new FrameTCON(frameData);
 				frame = data.frameTCON;
 			case "TDRC":
-				frame = new FrameTDRC(frameData);
+				data.frameTDRC = new FrameTDRC(frameData);
+				frame = data.frameTDRC;
 			case "TIT2":
 				data.frameTIT2 = new FrameTIT2(frameData);
 				frame = data.frameTIT2;
@@ -379,7 +391,8 @@ class Reader
 				data.framesTXXX.push( frameTXXX );
 				frame = frameTXXX;
 			case "TYER":
-				frame = new FrameTYER(frameData);
+				data.framesTYER = new FrameTYER(frameData);
+				frame = data.framesTYER;
 			default:
 				frame = new UnknownFrame(frameData);
 		}

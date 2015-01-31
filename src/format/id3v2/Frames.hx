@@ -131,6 +131,10 @@ class FrameTDRC extends TimestampFrame {
 		super(data);
 		dateRecorded = timestamp;
 	}
+	public function getYear() : Null<Int>
+	{
+		return dateRecorded.year;
+	}
 }
 
 class FrameTIT2 extends TextInformationFrame {
@@ -213,5 +217,9 @@ class FrameTYER extends TextInformationFrame {
 			if (yearRegex.match(value))
 				yearRecorded.push(Std.parseInt(value));
 		}
+	}
+	public function getYear() : Null<Int>
+	{
+		return yearRecorded[0];
 	}
 }
