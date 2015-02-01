@@ -29,7 +29,7 @@ class ID3v2
 	public var frameTIT2 : FrameTIT2;
 	public var frameTRCK : FrameTRCK;
 	public var framesTXXX : List<FrameTXXX>;
-	public var framesTYER : FrameTYER;
+	public var frameTYER : FrameTYER;
 }
 
 class VersionNumber

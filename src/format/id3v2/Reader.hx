@@ -87,8 +87,8 @@ class Reader
 	public function getYear() : Null<Int>
 	{
 		var year : Null<Int> = null;
-		if (data.framesTYER != null)
-			year = data.framesTYER.getYear();
+		if (data.frameTYER != null)
+			year = data.frameTYER.getYear();
 		if (year == null)
 			if (data.frameTDRC != null)
 				year = data.frameTDRC.getYear();
@@ -370,29 +370,42 @@ class Reader
 		switch (header.ID)
 		{
 			case "TALB":
-				data.frameTALB = new FrameTALB(frameData);
-				frame = data.frameTALB;
+				var frameTALB = new FrameTALB(frameData);
+				if (data.frameTALB == null)
+					data.frameTALB = frameTALB;
+				frame = frameTALB;
 			case "TCON":
-				data.frameTCON = new FrameTCON(frameData);
-				frame = data.frameTCON;
+				var frameTCON = new FrameTCON(frameData);
+				if (data.frameTCON == null)
+					data.frameTCON = frameTCON;
+				frame = frameTCON;
 			case "TDRC":
-				data.frameTDRC = new FrameTDRC(frameData);
-				frame = data.frameTDRC;
+				var frameTDRC = new FrameTDRC(frameData);
+				if (data.frameTDRC == null)
+					data.frameTDRC = frameTDRC;
+				frame = frameTDRC;
 			case "TIT2":
-				data.frameTIT2 = new FrameTIT2(frameData);
-				frame = data.frameTIT2;
+				var frameTIT2 = new FrameTIT2(frameData);
+				if (data.frameTIT2 == null)
+					data.frameTIT2 = frameTIT2;
+				frame = frameTIT2;
 			case "TPE1":
-				frame = new FrameTPE1(frameData);
+				var frameTPE1 = new FrameTPE1(frameData);
+				frame = frameTPE1;
 			case "TRCK":
-				data.frameTRCK = new FrameTRCK(frameData);
-				frame = data.frameTRCK;
+				var frameTRCK = new FrameTRCK(frameData);
+				if (data.frameTRCK == null)
+					data.frameTRCK = frameTRCK;
+				frame = frameTRCK;
 			case "TXXX":
 				var frameTXXX = new FrameTXXX(frameData);
 				data.framesTXXX.push( frameTXXX );
 				frame = frameTXXX;
 			case "TYER":
-				data.framesTYER = new FrameTYER(frameData);
-				frame = data.framesTYER;
+				var frameTYER = new FrameTYER(frameData);
+				if (data.frameTYER == null)
+					data.frameTYER = frameTYER;
+				frame = frameTYER;
 			default:
 				frame = new UnknownFrame(frameData);
 		}
