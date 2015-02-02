@@ -105,13 +105,13 @@ class FrameTCON extends TextInformationFrame {
 	public function new (data : Bytes)
 	{
 		super(data);
-		var regex = ~/^[0-9]+$/;
+		var regex = ~/^\(?([0-9]+)\)?$/;
 		for (i in 0...values.length)
 		{
 			var genreText = values[i];
 			if (regex.match(genreText))
 			{
-				var genreNumber = Std.parseInt(regex.matched(0));
+				var genreNumber = Std.parseInt(regex.matched(1));
 				if (genreNumber < ID3v1.GENRES.length)
 					values[i] = ID3v1.GENRES[genreNumber];
 			}
